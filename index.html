@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบตรวจสอบการจัดส่งพัสดุ</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
+
+<style>
+
+*,
+*::before,
+*::after{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+:root{
+  --bg:#f7f6f3;
+  --surface:#ffffff;
+  --surface2:#f2f1ee;
+  --border:rgba(0,0,0,.10);
+  --border2:rgba(0,0,0,.18);
+
+  --text:#1a1a18;
+  --text2:#6b6a65;
+  --text3:#9e9d98;
+
+  --green-bg:#e1f5ee;
+  --green-text:#085041;
+
+  --amber-bg:#faeeda;
+  --amber-text:#633806;
+
+  --accent:#1D9E75;
+
+  --r-md:8px;
+  --r-lg:12px;
+  --r-xl:16px;
+
+  --font:'Noto Sans Thai',system-ui,sans-serif;
+  --mono:'Roboto Mono',monospace;
+}
+
+html{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--text);
+}
+
+body{
+  min-height:100vh;
+}
+
+.site-header{
+  height:56px;
+  background:#fff;
+  border-bottom:.5px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:0 20px;
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  text-decoration:none;
+  color:var(--text);
+  font-weight:600;
+}
+
+.logo-dot{
+  width:8px;
+  height:8px;
+  background:var(--accent);
+  border-radius:50%;
+}
+
+.main{
+  max-width:1100px;
+  margin:auto;
+  padding:30px 20px;
+}
+
+.summary-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px;
+  margin-bottom:20px;
+}
+
+.stat-card{
+  background:#fff;
+  border:.5px solid var(--border);
+  border-radius:12px;
+  padding:16px;
+}
+
+.stat-label{
+  font-size:12px;
+  color:var(--text2);
+  margin-bottom:8px;
+}
+
+.stat-val{
+  font-size:28px;
+  font-weight:600;
+}
+
+.green{
+  color:#0F6E56;
+}
+
+.amber{
+  color:#854F0B;
+}
+
+.toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:18px;
+}
+
+.toolbar select,
+.toolbar input{
+  height:40px;
+  border:1px solid var(--border2);
+  border-radius:8px;
+  padding:0 12px;
+  font-family:var(--font);
+}
+
+.toolbar input{
+  flex:1;
+  min-width:250px;
+}
+
+.btn{
+  height:40px;
+  border:none;
+  border-radius:8px;
+  padding:0 16px;
+  cursor:pointer;
+  background:#fff;
+  border:1px solid var(--border2);
+}
+
+.btn-primary{
+  background:var(--accent);
+  color:white;
+}
+
+.btn-primary:hover{
+  background:#0F6E56;
+}
+
+.table-card{
+  background:white;
+  border:.5px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+}
+
+.table-scroll{
+  overflow:auto;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:700px;
+}
+
+thead{
+  background:var(--surface2);
+}
+
+th{
+  text-align:left;
+  padding:12px;
+  font-size:12px;
+  color:var(--text2);
+}
+
+td{
+  padding:12px;
+  border-top:.5px solid var(--border);
+}
+
+tbody tr:hover{
+  background:var(--surface2);
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:12px;
+}
+
+.badge-delivered{
+  background:var(--green-bg);
+  color:var(--green-text);
+}
+
+.badge-pending{
+  background:var(--amber-bg);
+  color:var(--amber-text);
+}
+
+.table-footer{
+  display:flex;
+  justify-content:space-between;
+  padding:12px 16px;
+  border-top:.5px solid var(--border);
+  background:var(--surface2);
+  font-size:12px;
+}
+
+.modal-bg{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.4);
+  justify-content:center;
+  align-items:center;
+}
+
+.modal-bg.open{
+  display:flex;
+}
+
+.modal{
+  width:90%;
+  max-width:450px;
+  background:#fff;
+  border-radius:16px;
+  padding:24px;
+}
+
+.modal-footer{
+  margin-top:20px;
+  text-align:right;
+}
+
+@media(max-width:600px){
+
+  .toolbar select,
+  .toolbar input{
+    width:100%;
+  }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header class="site-header">
+
+<a href="#" class="logo">
+
+<svg width="28" height="28" viewBox="0 0 28 28">
+<rect x="3" y="7" width="22" height="16"
+rx="2.5"
+fill="#1D9E75"
+opacity=".15"/>
+
+<rect x="3" y="7" width="22" height="16"
+rx="2.5"
+stroke="#1D9E75"
+stroke-width="1.5"/>
+
+</svg>
+
+ติดตามพัสดุ <span class="logo-dot"></span>
+
+</a>
+
+<span style="font-size:12px;color:#999">
+อัปเดตล่าสุด:
+<span id="lastUpdate">-</span>
+</span>
+
+</header>
+
+<main class="main">
+
+<div class="summary-grid">
+
+<div class="stat-card">
+<div class="stat-label">พัสดุทั้งหมด</div>
+<div class="stat-val" id="sTotal">0</div>
+</div>
+
+<div class="stat-card">
+<div class="stat-label">จัดส่งแล้ว</div>
+<div class="stat-val green" id="sDelivered">0</div>
+</div>
+
+<div class="stat-card">
+<div class="stat-label">รอจัดส่ง</div>
+<div class="stat-val amber" id="sPending">0</div>
+</div>
+
+<div class="stat-card">
+<div class="stat-label">จัดส่งวันนี้</div>
+<div class="stat-val" id="sToday">0</div>
+</div>
+
+</div>
+
+<div class="toolbar">
+
+<select id="zoneFilter">
+
+<option value="">
+ทุกเขตพื้นที่
+</option>
+
+<option value="กรุงเทพ">
+กรุงเทพ
+</option>
+
+<option value="กรุงเทพตะวันตก">
+กรุงเทพตะวันตก
+</option>
+
+<option value="ตะวันออก">
+ตะวันออก
+</option>
+
+<option value="เหนือ">
+เหนือ
+</option>
+
+<option value="ใต้">
+ใต้
+</option>
+
+<option value="อีสานบน">
+อีสานบน
+</option>
+
+<option value="อีสานล่าง">
+อีสานล่าง
+</option>
+
+</select>
+
+<select id="statusFilter">
+
+<option value="">
+ทุกสถานะ
+</option>
+
+<option value="delivered">
+จัดส่งแล้ว
+</option>
+
+<option value="pending">
+รอจัดส่ง
+</option>
+
+</select>
+
+<input
+id="searchText"
+type="text"
+placeholder="ค้นหา..."
+
+>
+
+<button
+class="btn"
+onclick="exportCSV()">
+Export CSV </button>
+
+<button
+class="btn btn-primary"
+onclick="loadData()">
+รีเฟรช </button>
+
+</div>
+
+<div class="table-card">
+
+<div class="table-scroll">
+
+<table>
+
+<thead>
+
+<tr>
+<th>#</th>
+<th>เลขพัสดุ</th>
+<th>ผู้รับ</th>
+<th>ปลายทาง</th>
+<th>เขตพื้นที่</th>
+<th>วันที่จัดส่ง</th>
+<th>สถานะ</th>
+</tr>
+
+</thead>
+
+<tbody id="tableBody">
+
+</tbody>
+
+</table>
+
+</div>
+
+<div class="table-footer">
+
+<span id="footerCount">
+0 รายการ
+</span>
+
+<span id="dataSource">
+Google Sheets API
+</span>
+
+</div>
+
+</div>
+
+</main>
+<!-- MODAL รายละเอียดพัสดุ -->
+
+<div class="modal-bg" id="detailModal">
+
+  <div class="modal">
+
+```
+<h3 style="margin-bottom:15px">
+  รายละเอียดพัสดุ
+</h3>
+
+<div id="detailContent"></div>
+
+<div class="modal-footer">
+  <button
+    class="btn"
+    onclick="closeModal()">
+    ปิด
+  </button>
+</div>
+```
+
+  </div>
+
+</div>
+
+<script>
+
+/* ==========================
+   CONFIG
+========================== */
+
+const API_URL =
+"https://script.google.com/macros/s/AKfycbz3TC_B4Hg4FRqG92kRbLsUyO_FaltAQv5S0ITwnu1Vm8MlEayu7T-OujzLFgzXbpVt/exec";
+
+/* ==========================
+   STATE
+========================== */
+
+let allData = [];
+
+/* ==========================
+   HELPERS
+========================== */
+
+function escHtml(text){
+
+  return String(text || "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
+
+}
+
+function getTodayISO(){
+
+  const now = new Date();
+
+  return new Date(
+    now.getTime() -
+    now.getTimezoneOffset()*60000
+  )
+  .toISOString()
+  .slice(0,10);
+
+}
+
+function fmtDate(date){
+
+  if(!date) return "-";
+
+  const d = new Date(date);
+
+  if(isNaN(d)) return date;
+
+  return d.toLocaleDateString("th-TH");
+
+}
+
+/* ==========================
+   STATS
+========================== */
+
+function updateStats(data){
+
+  const today = getTodayISO();
+
+  document.getElementById("sTotal")
+    .textContent = data.length;
+
+  document.getElementById("sDelivered")
+    .textContent =
+    data.filter(
+      x=>x.status==="delivered"
+    ).length;
+
+  document.getElementById("sPending")
+    .textContent =
+    data.filter(
+      x=>x.status==="pending"
+    ).length;
+
+  document.getElementById("sToday")
+    .textContent =
+    data.filter(
+      x=>x.date===today
+    ).length;
+
+  document.getElementById("lastUpdate")
+    .textContent =
+    new Date().toLocaleString("th-TH");
+
+}
+
+/* ==========================
+   TABLE
+========================== */
+
+function renderTable(data){
+
+  updateStats(data);
+
+  document.getElementById(
+    "footerCount"
+  ).textContent =
+    data.length + " รายการ";
+
+  const tbody =
+    document.getElementById(
+      "tableBody"
+    );
+
+  if(!data.length){
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7"
+            style="
+            text-align:center;
+            padding:50px;">
+          ไม่พบข้อมูล
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+  tbody.innerHTML =
+    data.map((item,index)=>{
+
+      const badge =
+      item.status==="delivered"
+
+      ?
+
+      `<span class="badge badge-delivered">
+        จัดส่งแล้ว
+      </span>`
+
+      :
+
+      `<span class="badge badge-pending">
+        รอจัดส่ง
+      </span>`;
+
+      return `
+
+      <tr
+        onclick="showDetail(${index})"
+        style="cursor:pointer">
+
+        <td>${index+1}</td>
+
+        <td>
+          ${escHtml(item.tracking)}
+        </td>
+
+        <td>
+          ${escHtml(item.name)}
+        </td>
+
+        <td>
+          ${escHtml(item.dest)}
+        </td>
+
+        <td>
+          ${escHtml(item.zone)}
+        </td>
+
+        <td>
+          ${fmtDate(item.date)}
+        </td>
+
+        <td>
+          ${badge}
+        </td>
+
+      </tr>
+
+      `;
+
+    }).join("");
+
+}
+
+/* ==========================
+   SEARCH
+========================== */
+
+function doSearch(){
+
+  const zone =
+  document.getElementById(
+    "zoneFilter"
+  ).value;
+
+  const status =
+  document.getElementById(
+    "statusFilter"
+  ).value;
+
+  const keyword =
+  document.getElementById(
+    "searchText"
+  )
+  .value
+  .trim()
+  .toLowerCase();
+
+  let result = [...allData];
+
+  if(zone){
+
+    result =
+    result.filter(
+      x => x.zone===zone
+    );
+
+  }
+
+  if(status){
+
+    result =
+    result.filter(
+      x => x.status===status
+    );
+
+  }
+
+  if(keyword){
+
+    result =
+    result.filter(item =>
+
+      (item.tracking || "")
+      .toLowerCase()
+      .includes(keyword)
+
+      ||
+
+      (item.name || "")
+      .toLowerCase()
+      .includes(keyword)
+
+      ||
+
+      (item.dest || "")
+      .toLowerCase()
+      .includes(keyword)
+
+    );
+
+  }
+
+  renderTable(result);
+
+}
+
+/* ==========================
+   EVENTS
+========================== */
+
+document
+.getElementById("zoneFilter")
+.addEventListener(
+  "change",
+  doSearch
+);
+
+document
+.getElementById("statusFilter")
+.addEventListener(
+  "change",
+  doSearch
+);
+
+document
+.getElementById("searchText")
+.addEventListener(
+  "input",
+  doSearch
+);
+/* ==========================
+MODAL
+========================== */
+
+function showDetail(index){
+
+const item = allData[index];
+
+const html = `
+
+```
+<table style="width:100%">
+
+  <tr>
+    <td><strong>เลขพัสดุ</strong></td>
+    <td>${escHtml(item.tracking)}</td>
+  </tr>
+
+  <tr>
+    <td><strong>ผู้รับ</strong></td>
+    <td>${escHtml(item.name)}</td>
+  </tr>
+
+  <tr>
+    <td><strong>ปลายทาง</strong></td>
+    <td>${escHtml(item.dest)}</td>
+  </tr>
+
+  <tr>
+    <td><strong>เขตพื้นที่</strong></td>
+    <td>${escHtml(item.zone)}</td>
+  </tr>
+
+  <tr>
+    <td><strong>วันที่จัดส่ง</strong></td>
+    <td>${fmtDate(item.date)}</td>
+  </tr>
+
+  <tr>
+    <td><strong>สถานะ</strong></td>
+    <td>${escHtml(item.status)}</td>
+  </tr>
+
+</table>
+```
+
+`;
+
+document
+.getElementById("detailContent")
+.innerHTML = html;
+
+document
+.getElementById("detailModal")
+.classList.add("open");
+
+}
+
+function closeModal(){
+
+document
+.getElementById("detailModal")
+.classList.remove("open");
+
+}
+
+document
+.getElementById("detailModal")
+.addEventListener("click",function(e){
+
+if(e.target===this){
+
+```
+closeModal();
+```
+
+}
+
+});
+
+/* ==========================
+EXPORT CSV
+========================== */
+
+function exportCSV(){
+
+const header =
+"tracking,name,dest,zone,date,status\n";
+
+const rows =
+allData.map(item => [
+
+```
+item.tracking,
+item.name,
+item.dest,
+item.zone,
+item.date,
+item.status
+```
+
+].join(","));
+
+const csv =
+header + rows.join("\n");
+
+const blob =
+new Blob(
+[csv],
+{
+type:
+"text/csv;charset=utf-8;"
+}
+);
+
+const url =
+URL.createObjectURL(blob);
+
+const a =
+document.createElement("a");
+
+a.href = url;
+a.download =
+"parcel-report.csv";
+
+document.body.appendChild(a);
+
+a.click();
+
+a.remove();
+
+URL.revokeObjectURL(url);
+
+}
+
+/* ==========================
+LOAD DATA
+========================== */
+
+async function loadData(){
+
+try{
+
+```
+const response =
+await fetch(API_URL);
+
+if(!response.ok){
+
+  throw new Error(
+    "โหลดข้อมูลไม่สำเร็จ"
+  );
+
+}
+
+const data =
+await response.json();
+
+allData = data;
+
+localStorage.setItem(
+  "parcelData",
+  JSON.stringify(data)
+);
+
+renderTable(allData);
+```
+
+}
+
+catch(error){
+
+```
+console.error(error);
+
+const cache =
+localStorage.getItem(
+  "parcelData"
+);
+
+if(cache){
+
+  allData =
+  JSON.parse(cache);
+
+  renderTable(allData);
+
+  alert(
+    "ไม่สามารถเชื่อม API ได้ กำลังใช้ข้อมูลล่าสุดที่บันทึกไว้"
+  );
+
+}
+
+else{
+
+  alert(
+    "ไม่สามารถโหลดข้อมูลได้"
+  );
+
+}
+```
+
+}
+
+}
+
+/* ==========================
+AUTO REFRESH
+========================== */
+
+setInterval(
+
+loadData,
+
+60000
+
+);
+
+/* ==========================
+START
+========================== */
+
+window.addEventListener(
+
+"load",
+
+loadData
+
+);
+
+</script>
+
+</body>
+</html>
+
